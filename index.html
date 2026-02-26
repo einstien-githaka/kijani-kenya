@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Kijani Kenya — Urban Green Tracker</title>
-
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -422,7 +422,7 @@ textarea{resize:vertical;min-height:80px}
             <div class="card-header"><span class="card-title">📖 Kijani Kenya — API Reference</span></div>
             <div class="modal-body">
               <p style="color:var(--muted);line-height:1.7;margin-bottom:1rem">The Kijani Kenya API solves the problem of <strong style="color:var(--text)">fragmented, manual urban tree planting tracking</strong> across Kenya's counties.</p>
-              <div style="background:var(--bg);border:1px solid var(--border);border-radius:.5rem;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--moss)">Base URL: https://kijani-kenya-production.up.railway.app/api</div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:.5rem;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--moss)">Base URL: http://localhost:3000/api</div>
             </div>
           </div>
           <div class="card fade-in" style="margin-bottom:1rem">
@@ -484,9 +484,9 @@ GET /api/auth/me   (requires Authorization: Bearer token)</pre>
 
 <div id="toast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── STATE ─────────────────────────────────────────────────────
-var API = 'https://kijani-kenya-production.up.railway.app/api';
+var API = 'http://localhost:3000/api';
 var state = { token:null, user:null, stats:null, sites:[], reports:[], alerts:[], users:[], currentPage:'dashboard' };
 
 // ── CLOUDINARY CONFIG ─────────────────────────────────────────
@@ -1116,4 +1116,8 @@ function toast(msg, type) {
   el.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
   el.className = 'show ' + type;
   clearTimeout(toastTimer);
-  toa
+  toastTimer = setTimeout(function() { el.className = ""; }, 3500);
+}
+</script>
+</body>
+</html>
