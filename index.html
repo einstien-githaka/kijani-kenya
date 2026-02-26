@@ -248,6 +248,7 @@ textarea{resize:vertical;min-height:80px}
         </div>
       </div>
       <button class="btn btn-outline btn-sm" style="width:100%;margin-top:.75rem;justify-content:center" onclick="logout()">Sign Out</button>
+      <button class="btn btn-outline btn-sm" style="width:100%;margin-top:.4rem;justify-content:center;border-color:var(--danger);color:var(--danger)" onclick="openDeleteAccount()">🗑 Delete My Account</button>
     </div>
   </aside>
 
@@ -410,7 +411,7 @@ textarea{resize:vertical;min-height:80px}
         </div>
         <div class="card">
           <div class="card-header"><span class="card-title">👥 Team Members</span><button class="btn btn-primary btn-sm" onclick="openAddUser()">+ Add User</button></div>
-          <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>County</th><th>Joined</th></tr></thead>
+          <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>County</th><th>Joined</th><th>Actions</th></tr></thead>
           <tbody id="users-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr></tbody></table>
         </div>
       </div>
@@ -477,6 +478,56 @@ GET /api/auth/me   (requires Authorization: Bearer token)</pre>
       <div class="form-actions">
         <button class="btn btn-outline" onclick="closeAddUser()">Cancel</button>
         <button class="btn btn-primary" onclick="submitAddUser()">Create User →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="change-pw-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">🔑 Change Password</span><button class="modal-close" onclick="closeChangePassword()">✕</button></div>
+    <div class="modal-body">
+      <div id="change-pw-err" class="error-msg"></div>
+      <div id="change-pw-success" class="success-msg"></div>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:1.25rem">Changing password for: <strong id="change-pw-name" style="color:var(--text)"></strong></p>
+      <div id="change-pw-current-wrap" class="form-group" style="margin-bottom:1rem">
+        <label>Current Password</label>
+        <input type="password" id="change-pw-current" placeholder="Enter current password"/>
+      </div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label>New Password *</label>
+        <input type="password" id="change-pw-new" placeholder="Min 6 characters"/>
+      </div>
+      <div class="form-group" style="margin-bottom:1.5rem">
+        <label>Confirm New Password *</label>
+        <input type="password" id="change-pw-confirm" placeholder="Repeat new password"/>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeChangePassword()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitChangePassword()">Update Password →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ACCOUNT MODAL -->
+<div class="modal-overlay" id="delete-account-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" style="color:var(--danger)">🗑 Delete My Account</span><button class="modal-close" onclick="closeDeleteAccount()">✕</button></div>
+    <div class="modal-body">
+      <div id="delete-account-err" class="error-msg"></div>
+      <div style="background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.2);border-radius:.5rem;padding:1rem;margin-bottom:1.25rem">
+        <p style="color:var(--danger);font-size:.9rem;font-weight:600">⚠️ This action is permanent and cannot be undone.</p>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:.4rem">Your account, profile and access will be permanently removed.</p>
+      </div>
+      <div class="form-group" style="margin-bottom:1.5rem">
+        <label>Enter your password to confirm</label>
+        <input type="password" id="delete-account-pw" placeholder="Your current password"/>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeDeleteAccount()">Cancel</button>
+        <button class="btn btn-primary" style="background:var(--danger)" onclick="submitDeleteAccount()">Yes, Delete My Account</button>
       </div>
     </div>
   </div>
@@ -1060,10 +1111,17 @@ function resolveAlert(id) {
 function renderUsersPage() {
   var tbody = document.getElementById('users-tbody');
   tbody.innerHTML = state.users.map(function(u) {
-    return '<tr><td><div style="display:flex;align-items:center;gap:.75rem"><div style="width:32px;height:32px;border-radius:50%;background:var(--moss);color:var(--bg);font-family:\'Syne\',sans-serif;font-size:.75rem;font-weight:800;display:flex;align-items:center;justify-content:center">' + (u.avatar || u.name.slice(0,2)) + '</div><span style="font-family:\'Syne\',sans-serif;font-size:.88rem;font-weight:700">' + u.name + '</span></div></td>' +
+    var isSelf = state.user && state.user.id === u.id;
+    var isLastAdmin = u.role === 'admin' && state.users.filter(function(x){ return x.role === 'admin'; }).length <= 1;
+    return '<tr><td><div style="display:flex;align-items:center;gap:.75rem"><div style="width:32px;height:32px;border-radius:50%;background:var(--moss);color:var(--bg);font-family:\'Syne\',sans-serif;font-size:.75rem;font-weight:800;display:flex;align-items:center;justify-content:center">' + (u.avatar || u.name.slice(0,2)) + '</div><span style="font-family:\'Syne\',sans-serif;font-size:.88rem;font-weight:700">' + u.name + (isSelf ? ' <span style="font-size:.7rem;color:var(--moss)">(you)</span>' : '') + '</span></div></td>' +
       '<td style="font-size:.85rem;color:var(--muted)">' + u.email + '</td>' +
       '<td><span class="badge ' + (u.role === 'admin' ? 'badge-danger' : u.role === 'officer' ? 'badge-active' : 'badge-planning') + '">' + u.role + '</span></td>' +
-      '<td>' + (u.county || '—') + '</td><td style="font-size:.82rem;color:var(--muted)">' + u.joined + '</td></tr>';
+      '<td>' + (u.county || '—') + '</td>' +
+      '<td style="font-size:.82rem;color:var(--muted)">' + u.joined + '</td>' +
+      '<td><div style="display:flex;gap:.4rem">' +
+      '<button class="btn btn-outline btn-sm" onclick="openChangePassword(\'' + u.id + '\',\'' + u.name + '\')">🔑</button>' +
+      (!isSelf && !isLastAdmin ? '<button class="btn btn-outline btn-sm" style="border-color:var(--danger);color:var(--danger)" onclick="deleteUser(\'' + u.id + '\',\'' + u.name + '\')">🗑</button>' : '') +
+      '</div></td></tr>';
   }).join('');
 }
 
@@ -1084,6 +1142,91 @@ function submitAddUser() {
   apiCall('/users', 'POST', body).then(function(r) {
     if (!r.res.ok) { errEl.textContent = r.data.error; errEl.style.display = 'block'; return; }
     loadUsers().then(function() { renderUsersPage(); closeAddUser(); toast('User created!', 'success'); });
+  });
+}
+
+// ── DELETE USER (admin) ───────────────────────────────────────
+function deleteUser(id, name) {
+  if (!confirm('Delete user "' + name + '"? This cannot be undone.')) return;
+  apiCall('/users/' + id, 'DELETE').then(function(r) {
+    if (r.res.ok) {
+      toast('User deleted', 'success');
+      loadUsers().then(function() { renderUsersPage(); });
+    } else {
+      toast(r.data.error || 'Error deleting user', 'error');
+    }
+  });
+}
+
+// ── CHANGE PASSWORD ───────────────────────────────────────────
+var changePwUserId = null;
+
+function openChangePassword(id, name) {
+  changePwUserId = id;
+  var isSelf = state.user && state.user.id === id;
+  document.getElementById('change-pw-name').textContent = name;
+  document.getElementById('change-pw-current-wrap').style.display = isSelf ? 'flex' : 'none';
+  document.getElementById('change-pw-current').value = '';
+  document.getElementById('change-pw-new').value = '';
+  document.getElementById('change-pw-confirm').value = '';
+  document.getElementById('change-pw-err').style.display = 'none';
+  document.getElementById('change-pw-success').style.display = 'none';
+  document.getElementById('change-pw-modal').classList.add('open');
+}
+
+function closeChangePassword() {
+  document.getElementById('change-pw-modal').classList.remove('open');
+  changePwUserId = null;
+}
+
+function submitChangePassword() {
+  var errEl = document.getElementById('change-pw-err');
+  var sucEl = document.getElementById('change-pw-success');
+  errEl.style.display = sucEl.style.display = 'none';
+
+  var newPw     = document.getElementById('change-pw-new').value;
+  var confirmPw = document.getElementById('change-pw-confirm').value;
+  var currentPw = document.getElementById('change-pw-current').value;
+  var isSelf    = state.user && state.user.id === changePwUserId;
+
+  if (!newPw) { errEl.textContent = 'Please enter a new password'; errEl.style.display = 'block'; return; }
+  if (newPw !== confirmPw) { errEl.textContent = 'Passwords do not match'; errEl.style.display = 'block'; return; }
+  if (isSelf && !currentPw) { errEl.textContent = 'Please enter your current password'; errEl.style.display = 'block'; return; }
+
+  var body = { new_password: newPw };
+  if (isSelf) body.current_password = currentPw;
+
+  apiCall('/users/' + changePwUserId + '/password', 'PATCH', body).then(function(r) {
+    if (!r.res.ok) { errEl.textContent = r.data.error; errEl.style.display = 'block'; return; }
+    sucEl.textContent = '✅ Password updated successfully!';
+    sucEl.style.display = 'block';
+    setTimeout(closeChangePassword, 1500);
+    toast('Password updated!', 'success');
+  });
+}
+
+// ── DELETE OWN ACCOUNT ────────────────────────────────────────
+function openDeleteAccount() {
+  document.getElementById('delete-account-pw').value = '';
+  document.getElementById('delete-account-err').style.display = 'none';
+  document.getElementById('delete-account-modal').classList.add('open');
+}
+
+function closeDeleteAccount() {
+  document.getElementById('delete-account-modal').classList.remove('open');
+}
+
+function submitDeleteAccount() {
+  var errEl = document.getElementById('delete-account-err');
+  errEl.style.display = 'none';
+  var password = document.getElementById('delete-account-pw').value;
+  if (!password) { errEl.textContent = 'Please enter your password'; errEl.style.display = 'block'; return; }
+
+  apiCall('/users/' + state.user.id + '/self', 'DELETE', { password: password }).then(function(r) {
+    if (!r.res.ok) { errEl.textContent = r.data.error; errEl.style.display = 'block'; return; }
+    closeDeleteAccount();
+    logout();
+    toast('Account deleted', 'success');
   });
 }
 
